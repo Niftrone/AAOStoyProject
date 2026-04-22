@@ -1,12 +1,48 @@
-# Gradle files
-.gradle/
-build/
+# Android Studio / IntelliJ
+.idea/
+*.iws
+*.iml
+*.ipr
+.DS_Store
 
-# Local configuration file (sdk path, etc)
+# 빌드 결과물
+build/
+*/build/
+out/
+
+# Gradle
+.gradle/
+local.properties
+gradle.properties.local
+
+# 서명 키 (절대 올리면 안 됨!)
+*.jks
+*.keystore
+*.pk8
+*.p12
+
+# 로컬 설정
 local.properties
 
 # Log/OS Files
 *.log
+
+# APK / AAB
+*.apk
+*.aab
+*.ap_
+
+# 프로가드
+*.map
+
+# 테스트 결과
+test-results/
+lint-results*
+
+# NDK
+obj/
+.externalNativeBuild/
+.cxx/
 
 # Android Studio generated files and folders
 captures/
