@@ -6,6 +6,7 @@
         android:required="true" />
 
     <uses-permission android:name="android.car.permission.CAR_SPEED" />
+    <uses-permission android:name="android.car.permission.CAR_POWERTRAIN" />
     <uses-permission android:name="android.car.permission.CAR_ENGINE_DETAILED" />
     <uses-permission android:name="android.car.permission.CAR_ENERGY" />
 
@@ -20,6 +21,7 @@
         <activity
             android:name=".viewmodel.DashBoardActivity"
             android:exported="true">
+            <meta-data android:name="distractionOptimized" android:value="true"/>
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>

@@ -12,6 +12,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import kr.ac.daelim.myapplication.DashboardViewModel
 import kr.ac.daelim.myapplication.ui.screen.DashboardScreen
+import android.car.hardware.property.CarPropertyManager.SENSOR_RATE_ONCHANGE
 
 class DashBoardActivity : ComponentActivity() {
 
@@ -21,15 +22,18 @@ class DashBoardActivity : ComponentActivity() {
     // ✅ ViewModel 초기화
     private val viewModel: DashboardViewModel by viewModels()
 
+    private val requiredPermissions = arrayOf(
+        android.car.Car.PERMISSION_SPEED
+    )
+
     // 🚀 [최신 방식] 권한 요청 런처 선언 (구형 onRequestPermissionsResult 대체)
     private val requestPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted: Boolean ->
-        if (isGranted) {
-            // 사용자가 권한을 허용하면 VHAL 데이터 구독 시작
-            registerSpeedCallback()
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val allGranted = permissions.entries.all {it.value}
+        if (allGranted){
+            registerCarCallbacks()
         } else {
-            // 권한을 거부하면 ViewModel에 거부 상태 전달
             viewModel.setPermissionDenied()
         }
     }
@@ -46,41 +50,60 @@ class DashBoardActivity : ComponentActivity() {
             DashboardScreen(viewModel = viewModel)
         }
 
+        val hasAllPermission = requiredPermissions.all{
+            checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED
+        }
         // 3. 권한 확인 및 요청
-        if (checkSelfPermission(android.car.Car.PERMISSION_SPEED) == PackageManager.PERMISSION_GRANTED) {
+        if (hasAllPermission) {
             // 이미 권한이 있다면 바로 콜백 등록
-            registerSpeedCallback()
+            registerCarCallbacks()
         } else {
             // 🚀 [최신 방식] 런처를 통해 권한 요청 팝업 띄우기
-            requestPermissionLauncher.launch(android.car.Car.PERMISSION_SPEED)
+            requestPermissionLauncher.launch(requiredPermissions)
         }
     }
 
-    // VHAL 데이터 변경 감지 콜백
-    private val speedCallback = object : CarPropertyManager.CarPropertyEventCallback {
+    private val carPropertyCallback = object : CarPropertyManager.CarPropertyEventCallback {
         override fun onChangeEvent(value: CarPropertyValue<*>) {
-            val speed = value.value as Float
-            viewModel.updateSpeed(speed)
+            when (value.propertyId){
+                VehiclePropertyIds.PERF_VEHICLE_SPEED -> {
+                    val speed = value.value as Float
+                    viewModel.updateSpeed(speed)
+                }
+                VehiclePropertyIds.GEAR_SELECTION -> {
+                    val gear = value.value as Int
+                    viewModel.updateGear(gear)
+                }
+            }
         }
-
         override fun onErrorEvent(propId: Int, zone: Int) {
             viewModel.setError()
         }
     }
 
+
     // 콜백 등록 함수
-    private fun registerSpeedCallback() {
-        carPropertyManager?.registerCallback(
-            speedCallback,
-            VehiclePropertyIds.PERF_VEHICLE_SPEED,
-            CarPropertyManager.SENSOR_RATE_NORMAL
-        )
+    private fun registerCarCallbacks() {
+        carPropertyManager?.let { manager ->
+            manager.registerCallback(
+                carPropertyCallback,
+                VehiclePropertyIds.PERF_VEHICLE_SPEED,
+                CarPropertyManager.SENSOR_RATE_NORMAL
+            )
+            manager.registerCallback(
+                carPropertyCallback,
+                VehiclePropertyIds.GEAR_SELECTION,
+                SENSOR_RATE_ONCHANGE
+            )
+        }
+
+
     }
 
     // 앱 종료 시 메모리 누수 방지
     override fun onDestroy() {
         super.onDestroy()
-        carPropertyManager?.unregisterCallback(speedCallback)
+        carPropertyManager?.unregisterCallback(carPropertyCallback)
         car?.disconnect()
     }
 }
