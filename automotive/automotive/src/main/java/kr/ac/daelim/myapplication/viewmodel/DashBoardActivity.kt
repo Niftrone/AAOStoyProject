@@ -77,6 +77,8 @@ class DashBoardActivity : ComponentActivity() {
                     intVal?.let { viewModel.updateGear(it) }
                 VehiclePropertyIds.ENGINE_RPM ->
                     floatVal?.let { viewModel.updateRpm(it) }
+                VehiclePropertyIds.FUEL_LEVEL ->
+                    floatVal?.let { viewModel.updateFuel(it) }
 
             }
         }

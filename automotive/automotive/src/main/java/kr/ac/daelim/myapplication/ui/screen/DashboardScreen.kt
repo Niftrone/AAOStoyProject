@@ -29,6 +29,7 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
     val gearText by viewModel.gear.collectAsState()
     // 추가된 State 구독
     val rpmText by viewModel.rpm.collectAsState()
+    val fuelText by viewModel.fuel.collectAsState()
     val oilTempText by viewModel.oilTemp.collectAsState()
     val coolantTempText by viewModel.coolantTemp.collectAsState()
 
@@ -63,6 +64,10 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
             Spacer(modifier = Modifier.height(24.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(48.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    DashItem(label = "RPM", value = rpmText)
+                    DashItem(label = "연료 잔량", value = fuelText)
+                }
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     DashItem(label = "오일 온도", value = oilTempText)
                     DashItem(label = "냉각수 온도", value = coolantTempText)

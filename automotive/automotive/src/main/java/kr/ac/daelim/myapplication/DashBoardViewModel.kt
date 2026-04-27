@@ -11,11 +11,13 @@ class DashboardViewModel : ViewModel() {
     private val _gear = MutableStateFlow("기어 확인 중...")
     // 추가된 State
     private val _rpm = MutableStateFlow("미지원")
+    private val _fuel = MutableStateFlow("-- %")
     private val _oilTemp = MutableStateFlow("미지원")
     private val _coolantTemp = MutableStateFlow("미지원")
 
     val speed: StateFlow<String> = _speed.asStateFlow()
     val gear: StateFlow<String> = _gear.asStateFlow()
+    val fuel: StateFlow<String> = _fuel.asStateFlow()
     val rpm: StateFlow<String> = _rpm.asStateFlow()
     val oilTemp: StateFlow<String> = _oilTemp.asStateFlow()
     val coolantTemp: StateFlow<String> = _coolantTemp.asStateFlow()
@@ -40,6 +42,10 @@ class DashboardViewModel : ViewModel() {
         _rpm.value = "${newRpm.toInt()} RPM"
     }
 
+    fun updateFuel(newFuel: Float) {
+        _fuel.value = "${newFuel.toInt()} %"
+    }
+
     fun updateOilTemp(newTemp: Float) {
         _oilTemp.value = "${newTemp.toInt()} °C"
     }
@@ -56,6 +62,7 @@ class DashboardViewModel : ViewModel() {
         _speed.value = "권한 없음"
         _gear.value = "-"
         _rpm.value = "-"
+        _fuel.value = "-"
         _oilTemp.value = "-"
         _coolantTemp.value = "-"
     }
