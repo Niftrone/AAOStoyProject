@@ -19,11 +19,13 @@ class DashBoardActivity : ComponentActivity() {
     private var car: Car? = null
     private var carPropertyManager: CarPropertyManager? = null
 
-    // ✅ ViewModel 초기화
+    // ViewModel 초기화
     private val viewModel: DashboardViewModel by viewModels()
 
     private val requiredPermissions = arrayOf(
-        android.car.Car.PERMISSION_SPEED
+        android.car.Car.PERMISSION_SPEED,
+        android.car.Car.PERMISSION_POWERTRAIN,       // RPM
+        android.car.Car.PERMISSION_ENERGY,           // 연료
     )
 
     // 🚀 [최신 방식] 권한 요청 런처 선언 (구형 onRequestPermissionsResult 대체)
@@ -58,22 +60,24 @@ class DashBoardActivity : ComponentActivity() {
             // 이미 권한이 있다면 바로 콜백 등록
             registerCarCallbacks()
         } else {
-            // 🚀 [최신 방식] 런처를 통해 권한 요청 팝업 띄우기
+            //[최신 방식] 런처를 통해 권한 요청 팝업 띄우기
             requestPermissionLauncher.launch(requiredPermissions)
         }
     }
 
     private val carPropertyCallback = object : CarPropertyManager.CarPropertyEventCallback {
         override fun onChangeEvent(value: CarPropertyValue<*>) {
+            val floatVal = value.value as? Float
+            val intVal = value.value as? Int
+
             when (value.propertyId){
-                VehiclePropertyIds.PERF_VEHICLE_SPEED -> {
-                    val speed = value.value as Float
-                    viewModel.updateSpeed(speed)
-                }
-                VehiclePropertyIds.GEAR_SELECTION -> {
-                    val gear = value.value as Int
-                    viewModel.updateGear(gear)
-                }
+                VehiclePropertyIds.PERF_VEHICLE_SPEED ->
+                    floatVal?.let { viewModel.updateSpeed(it) }
+                VehiclePropertyIds.GEAR_SELECTION ->
+                    intVal?.let { viewModel.updateGear(it) }
+                VehiclePropertyIds.ENGINE_RPM ->
+                    floatVal?.let { viewModel.updateRpm(it) }
+
             }
         }
         override fun onErrorEvent(propId: Int, zone: Int) {
@@ -85,19 +89,24 @@ class DashBoardActivity : ComponentActivity() {
     // 콜백 등록 함수
     private fun registerCarCallbacks() {
         carPropertyManager?.let { manager ->
-            manager.registerCallback(
-                carPropertyCallback,
-                VehiclePropertyIds.PERF_VEHICLE_SPEED,
-                CarPropertyManager.SENSOR_RATE_NORMAL
-            )
-            manager.registerCallback(
-                carPropertyCallback,
-                VehiclePropertyIds.GEAR_SELECTION,
-                SENSOR_RATE_ONCHANGE
-            )
+
+            // 지원하는 Property 목록 가져오기
+            val supportedProps = manager.propertyList.map { it.propertyId }
+
+            // 지원 여부 확인 후 등록
+            fun safeRegister(propertyId: Int, rate: Float) {
+                if (supportedProps.contains(propertyId)) {
+                    manager.registerCallback(carPropertyCallback, propertyId, rate)
+                }
+            }
+
+            safeRegister(VehiclePropertyIds.PERF_VEHICLE_SPEED, CarPropertyManager.SENSOR_RATE_NORMAL)
+            safeRegister(VehiclePropertyIds.GEAR_SELECTION, SENSOR_RATE_ONCHANGE)
+            safeRegister(VehiclePropertyIds.FUEL_LEVEL, SENSOR_RATE_ONCHANGE)
+            safeRegister(VehiclePropertyIds.ENGINE_RPM, CarPropertyManager.SENSOR_RATE_NORMAL)
+            safeRegister(VehiclePropertyIds.ENGINE_OIL_TEMP, SENSOR_RATE_ONCHANGE)
+            safeRegister(VehiclePropertyIds.ENGINE_COOLANT_TEMP, SENSOR_RATE_ONCHANGE)
         }
-
-
     }
 
     // 앱 종료 시 메모리 누수 방지
